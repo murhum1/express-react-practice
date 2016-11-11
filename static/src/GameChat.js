@@ -11,10 +11,13 @@ TextField.contextTypes = {
 
 export default class Room extends React.Component {
 
+	initState(props) {
+		this.state = {value: "", messages: []}
+	}
 
 	constructor(props) {
 		super(props);
-		this.state = {value: 'Hello World!', messages: [{timestamp: new Date(), sender: "None", message: "Lol"}]}
+		this.state = {value: '', messages: []}
 	}
 
 	handleChange(event) {
@@ -45,22 +48,38 @@ export default class Room extends React.Component {
 		})
 	}
 
+	componentWillReceiveProps(nextProps) {
+		if (this.props.roomId && this.props.roomId !== nextProps.roomId) {
+			this.initState(nextProps)
+		}
+	}
+
 	componentWillUnmount() {
 		var c = this;
+	}
+
+	renderMessage(message) {
+		if (message.server) {
+			return <span style={{color: 'gray'}}>{message.message}</span>
+		}
+		else {
+			return message.sender + ": " + message.message;
+		}
 	}
 
 	render() {
 		const c = this;
 		return (
-			<div style={{width: '100%'}}>
+			<div style={{width: '100%', border: '1px solid', 'borderRadius': '4px', padding: '15px', 'marginTop':'15px'}}>
 				<div style={{height:'200px', 'overflow': 'none', position: 'relative', width: '100%'}}>
 					<div id="chatMessages" style={{position:'absolute', bottom: 0, maxHeight:'200px', overflow: 'auto', width: '100%'}}>
 						{c.state.messages.map((message) => {
 							return	(
 									<p style={{margin: '5px auto'}} key={message.timestamp.getTime()}>
-										<span style={{color: 'gray', marginRight:'15px'}}>{moment(message.timestamp).format('HH:mm:ss')}</span>
-
-										{message.sender}: {message.message}
+										
+										{
+											c.renderMessage(message)
+										}
 									</p>
 							)
 						})}
@@ -69,6 +88,7 @@ export default class Room extends React.Component {
 				<form onSubmit={c.onSubmit.bind(c)}>
 					<MuiThemeProvider muiTheme={getMuiTheme()}>
 						<TextField
+							placeholder="Type to chat!"
 							style={{width: '100%'}}
 							id="gameChatTextField"
 							value={c.state.value}

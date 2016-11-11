@@ -1,4 +1,5 @@
 var _ = require('lodash');
+var people = require('./People')
 
 var Rooms = {};
 
@@ -22,6 +23,9 @@ Rooms.getRoom = function(roomId) {
 	var socketRoom = Rooms.io.sockets.adapter.rooms["rooms/" + room.id] || {length: 0};
 	var returnedRoom = _.clone(room);
 	returnedRoom.currentPeople = socketRoom.length;
+	returnedRoom.names = _.map(socketRoom.sockets, function(val, key) {
+		return people[key];
+	})
 	return returnedRoom;
 }
 
