@@ -7,7 +7,6 @@ import RoomList from './RoomList'
 import App from './App'
 import Room from './Room'
 
-
 console.log("asd")
  
 // Needed for onTouchTap 

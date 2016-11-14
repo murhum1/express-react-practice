@@ -1,5 +1,8 @@
 import React from 'react'
 
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+
 
 export default React.createClass({
   componentWillMount() {
@@ -9,11 +12,11 @@ export default React.createClass({
 
   render() {
     return (
-      <div>
+      <MuiThemeProvider muiTheme={getMuiTheme()}>
         {
           React.cloneElement(this.props.children, {socket: this.state.socket})
         }
-      </div>
+      </MuiThemeProvider>
     )
   }
 })

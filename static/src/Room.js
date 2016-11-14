@@ -2,8 +2,6 @@ import ReactDOM from 'react-dom'
 import React from 'react';
 import GameChat from './GameChat'
 import Dialog from 'material-ui/Dialog'
-import getMuiTheme from 'material-ui/styles/getMuiTheme';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import TextField from 'material-ui/TextField';
 import RaisedButton from 'material-ui/RaisedButton';
 import GameArea from './GameArea'
@@ -58,12 +56,11 @@ export default class Room extends React.Component {
 		var c = this;
 		return (
 			<div>
-				<MuiThemeProvider muiTheme={getMuiTheme()}>
-			        <Dialog
-			          modal={false}
-			          open={this.state.nameModalOpen}
-			          onRequestClose={c.handleClose}
-			        >
+		        <Dialog
+		          modal={false}
+		          open={this.state.nameModalOpen}
+		          onRequestClose={c.handleClose}
+		        >
 			        <form onSubmit={c.handleClose}>
 						Choose your name (or join as guest):<br/>
 						<TextField
@@ -74,10 +71,9 @@ export default class Room extends React.Component {
 						>
 						</TextField>
 						<RaisedButton style={{margin:'10px'}} label={"Join room"} type="submit" primary={true}></RaisedButton>
-			          </form>
-			        </Dialog>
-		        </MuiThemeProvider>
-				<GameArea socket={this.props.socket} people={this.state.people}></GameArea>
+			        </form>
+		        </Dialog>
+				<GameArea socket={this.props.socket} roomId={c.props.routeParams.roomId} people={this.state.people}></GameArea>
 				<GameChat socket={this.props.socket} roomId={c.props.routeParams.roomId} />
 			</div>
 		)

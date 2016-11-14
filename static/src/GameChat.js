@@ -1,9 +1,9 @@
 import ReactDOM from 'react-dom'
 import React from 'react';
 import TextField from 'material-ui/TextField';
-import getMuiTheme from 'material-ui/styles/getMuiTheme';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import moment from 'moment'
+import Paper from 'material-ui/Paper';
+import ReactGridLayout from 'react-grid-layout'
 
 TextField.contextTypes = {
   muiTheme: React.PropTypes.object.isRequired,
@@ -70,33 +70,34 @@ export default class Room extends React.Component {
 	render() {
 		const c = this;
 		return (
-			<div style={{width: '100%', border: '1px solid', 'borderRadius': '4px', padding: '15px', 'marginTop':'15px'}}>
-				<div style={{height:'200px', 'overflow': 'none', position: 'relative', width: '100%'}}>
-					<div id="chatMessages" style={{position:'absolute', bottom: 0, maxHeight:'200px', overflow: 'auto', width: '100%'}}>
-						{c.state.messages.map((message) => {
-							return	(
-									<p style={{margin: '5px auto'}} key={message.timestamp.getTime()}>
-										
-										{
-											c.renderMessage(message)
-										}
-									</p>
-							)
-						})}
-					</div>
+			<ReactGridLayout className="layout" cols={1} rowHeight={300} width={1200}>
+				<div key="a" data-grid={{x: 0, y: 0, w: 1, h: 1, static: true}}>
+					<Paper zDepth={2} style={{width: '100%', height:'100%', padding: '15px'}}>
+						<div style={{height:'200px', 'overflow': 'none', position: 'relative', width: '100%'}}>
+							<div id="chatMessages" style={{position:'absolute', bottom: 0, maxHeight:'200px', overflow: 'auto', width: '100%'}}>
+								{c.state.messages.map((message) => {
+									return	(
+											<p style={{margin: '5px auto'}} key={message.timestamp.getTime()}>							
+												{
+													c.renderMessage(message)
+												}
+											</p>
+									)
+								})}
+							</div>
+						</div>
+						<form onSubmit={c.onSubmit.bind(c)}>
+							<TextField
+								placeholder="Type to chat!"
+								style={{width: '100%'}}
+								id="gameChatTextField"
+								value={c.state.value}
+								onChange={c.handleChange.bind(c)}
+							/>
+						</form>
+					</Paper>
 				</div>
-				<form onSubmit={c.onSubmit.bind(c)}>
-					<MuiThemeProvider muiTheme={getMuiTheme()}>
-						<TextField
-							placeholder="Type to chat!"
-							style={{width: '100%'}}
-							id="gameChatTextField"
-							value={c.state.value}
-							onChange={c.handleChange.bind(c)}
-						/>
-					</MuiThemeProvider>
-				</form>
-			</div>
+			</ReactGridLayout>
 		)
 	}
 	

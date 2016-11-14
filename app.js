@@ -13,6 +13,7 @@ var Rooms = require('./Rooms.js')
 Rooms.io = io;
 
 app.use(express.static(settings.STATIC_DIR));
+app.use('/node_modules', express.static('node_modules'))
 
 app.get('/', function(req, res) {
 	return res.sendFile(path.join(__dirname, 'static/index.html'))
@@ -23,6 +24,7 @@ app.get('/rooms', function(req, res) {
 	return res.json(rooms);
 })
 
+
 io.on('connection', function(client) {
 	console.log("Client connected, id: ", client.id);
 
@@ -30,7 +32,11 @@ io.on('connection', function(client) {
 		people[client.id] = data.name || "Guest#" + randomIntBetween(1000, 9999);
 		var roomName = 'rooms/' + data.roomId;
 		client.join(roomName);
+		if (!Rooms.getGame(data.roomId).owner) {
+			Rooms.assignGameOwner(data.roomId, client.id);
+		}
 		io.to(roomName).emit('message', {timestamp: new Date(), server: true, message: people[client.id] + " has joined the room!"});
+		client.emit('gameStatus', Rooms.getGame(data.roomId))
 		io.emit('updateRooms', {rooms: Rooms.getRooms()});
 	})
 
@@ -48,7 +54,17 @@ io.on('connection', function(client) {
 		io.to(room).emit('message', {timestamp: new Date(), sender: people[client.id], message: message});
 	})
 
+	client.on('startGame', function(roomId) {
+		var roomName = 'rooms/' + roomId;
+		Rooms.startGame(roomId);
+		var game = Rooms.getGame(roomId);
+		if (client.id === game.owner) {
+			io.to(roomName).emit('gameStatus', Rooms.getGame(roomId))
+		}
+	})
+
 	client.on('disconnect', function(data) {
+		Rooms.playerLeft(client.id);
 		io.sockets.emit('updateRooms', {rooms: Rooms.getRooms()})
 	})
 })

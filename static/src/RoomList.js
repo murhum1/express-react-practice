@@ -3,9 +3,6 @@ import React from 'react';
 import {List, ListItem} from 'material-ui/List';
 import {Link} from 'react-router'
 
-import getMuiTheme from 'material-ui/styles/getMuiTheme';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-
 List.contextTypes = {
   muiTheme: React.PropTypes.object.isRequired,
 };
@@ -52,11 +49,11 @@ export default class extends React.Component {
 				const link = <Link key={room.id} to={"rooms/" + room.id}><ListItem primaryText={primaryText} secondaryText={secondaryText} /></Link>
 				return link;
 			})
-			const list = (<MuiThemeProvider muiTheme={getMuiTheme()}>
+			const list = (
 			    <List>
 			    	{listItems}
 			    </List>
-			 </MuiThemeProvider>)
+			)
 
 			return list;
 		}
