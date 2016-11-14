@@ -49,16 +49,16 @@ export default class PlayArea extends React.Component {
 
 		const HEIGHT = 85;
 		const WIDTH = 140;
+
+		const OVAL_SIDE_LENGTH = HEIGHT / 8;
+
+		const oval_path = "\
+		M0 0 L \
+		"
+
 		return (
 			<svg height={HEIGHT} width={WIDTH}>
 				<defs>
-					<g id="oval">
-						<path d="M5.77229 25.7967c0,-13.0251 10.5629,-23.588 23.588,-23.588 13.0251,0 23.588,10.5629 23.588,23.588" />
-						<path d="M5.77229 58.8144c0,13.0251 10.5629,23.588 23.588,23.588 13.0251,0 23.588,-10.5629 23.588,-23.588" />
-						<line x1="5.77229" y1="25.7967" x2="5.77229" y2="58.8144" />
-						<line x1="52.9483" y1="25.7967" x2="52.9483" y2="58.8144" />
-					</g>
-
 					<pattern id="stripedblue" x="0%" y="0%" height="0.12" width="100%">
 					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="3" stroke="blue">
 					  </line>
@@ -74,9 +74,10 @@ export default class PlayArea extends React.Component {
 					  </line>
 					</pattern>
 				</defs>
-				<use xlinkHref="#oval" fill="red"></use>
 				<circle cx={WIDTH/2} cy={HEIGHT/2} r={HEIGHT/3} fill={getFill(card.fill)} strokeWidth="2" stroke={card.color}>
 				</circle>
+				<path x="80" transform="scale(0.8) translate(-150, -150)" d="M 200 185 L 200 150 C 200 115 250 115 250 150 L 250 185 C 250 220 200 220 200 185 Z" fill="red" strokeWidth="3" stroke="black">
+    			</path>
 			</svg>
 		)
 	}
@@ -98,7 +99,6 @@ export default class PlayArea extends React.Component {
 		      			this.state.game.activeCards.map((card, idx) => {
 			      		return (<div style={{transition: 'none', width: '100%', height: '100%'}} id="lol" key={card.shape + card.fill + card.number + card.color} data-grid={{x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true}}>
 			      			<Paper style={{width: '100%', height: '100%', padding: '10px', borderRadius: '4px'}} zDepth={1}>
-			      				
 			      				{c.drawCard(card)}
 			      				{card.color}<br/>
 			      				{card.fill}<br/>

@@ -50475,20 +50475,19 @@ var PlayArea = function (_React$Component) {
 
 			var HEIGHT = 85;
 			var WIDTH = 140;
+
+			var OVAL_SIDE_LENGTH = HEIGHT / 8;
+
+			var oval_path = "\
+		M0 0 L \
+		";
+
 			return _react2.default.createElement(
 				'svg',
 				{ height: HEIGHT, width: WIDTH },
 				_react2.default.createElement(
 					'defs',
 					null,
-					_react2.default.createElement(
-						'g',
-						{ id: 'oval' },
-						_react2.default.createElement('path', { d: 'M5.77229 25.7967c0,-13.0251 10.5629,-23.588 23.588,-23.588 13.0251,0 23.588,10.5629 23.588,23.588' }),
-						_react2.default.createElement('path', { d: 'M5.77229 58.8144c0,13.0251 10.5629,23.588 23.588,23.588 13.0251,0 23.588,-10.5629 23.588,-23.588' }),
-						_react2.default.createElement('line', { x1: '5.77229', y1: '25.7967', x2: '5.77229', y2: '58.8144' }),
-						_react2.default.createElement('line', { x1: '52.9483', y1: '25.7967', x2: '52.9483', y2: '58.8144' })
-					),
 					_react2.default.createElement(
 						'pattern',
 						{ id: 'stripedblue', x: '0%', y: '0%', height: '0.12', width: '100%' },
@@ -50505,8 +50504,8 @@ var PlayArea = function (_React$Component) {
 						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '3', stroke: 'green' })
 					)
 				),
-				_react2.default.createElement('use', { xlinkHref: '#oval', fill: 'red' }),
-				_react2.default.createElement('circle', { cx: WIDTH / 2, cy: HEIGHT / 2, r: HEIGHT / 3, fill: getFill(card.fill), strokeWidth: '2', stroke: card.color })
+				_react2.default.createElement('circle', { cx: WIDTH / 2, cy: HEIGHT / 2, r: HEIGHT / 3, fill: getFill(card.fill), strokeWidth: '2', stroke: card.color }),
+				_react2.default.createElement('path', { x: '80', transform: 'scale(0.8) translate(-150, -150)', d: 'M 200 185 L 200 150 C 200 115 250 115 250 150 L 250 185 C 250 220 200 220 200 185 Z', fill: 'red', strokeWidth: '3', stroke: 'black' })
 			);
 		}
 	}, {
