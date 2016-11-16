@@ -15,12 +15,12 @@ export default class PlayArea extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			game: {}
+			game: {},
+			selectedCardIds: {}
 		}
 	}
 
   	componentDidMount() {
-		console.log(this.props);
 	    var socket = this.props.socket;
 	    socket.on('gameStatus', function(status) {
 	    	this.setState({game: status});
@@ -31,10 +31,37 @@ export default class PlayArea extends React.Component {
 		this.props.socket.emit('startGame', this.props.roomId);
 	}
 
-	drawCard(card) {
+	onCardClick(card) {
+		card.selected = !card.selected;
+		this.setState({game: this.state.game});
+		/*
+		var newSelected = _.clone(this.state.selectedCardIds);
+		newSelected[card.id] = !newSelected[card.id];
+		this.setState({selectedCardIds: newSelected});
+		console.log(this.state.selectedCardIds);
+		*/
+	}
+
+	renderCard(card) {
+
+		const CARD_HEIGHT = 85;
+		const CARD_WIDTH = 140;
+
+		const SHAPE_WIDTH = CARD_WIDTH / 5;
+
+		const SHAPE_1_X = (CARD_WIDTH - SHAPE_WIDTH) / 2
+
+		const SHAPE_2_LEFT_X = CARD_WIDTH / 3 - SHAPE_WIDTH / 2
+		const SHAPE_2_RIGHT_X = (2 * CARD_WIDTH / 3) - SHAPE_WIDTH / 2
+
+		const SHAPE_3_LEFT_X = CARD_WIDTH / 6 - SHAPE_WIDTH / 2
+		const SHAPE_3_MIDDLE_X = 3 * CARD_WIDTH / 6 - SHAPE_WIDTH / 2
+		const SHAPE_3_RIGHT_X = 5 * CARD_WIDTH / 6 - SHAPE_WIDTH / 2
+
+		const STRIPE_FREQ = 0.07;
+
 
 		function getFill(fillType) {
-			console.log(fillType);
 			if (fillType === "empty") {
 				return "none"
 			}
@@ -46,38 +73,159 @@ export default class PlayArea extends React.Component {
 			}
 		}
 
+		function renderShapes() {
 
-		const HEIGHT = 85;
-		const WIDTH = 140;
+			function pathElement(path) {
+				return <path key={Math.random()} d={path} fill={getFill(card.fill)} strokeWidth="3" stroke={card.color}></path>
+			}
 
-		const OVAL_SIDE_LENGTH = HEIGHT / 8;
+			function diamond(startX) {
+				const left = startX;
+				const middle = left + SHAPE_WIDTH / 2;
+				const right = startX + SHAPE_WIDTH;
 
-		const oval_path = "\
-		M0 0 L \
-		"
+				const startY = CARD_HEIGHT / 2;
+				const top = CARD_HEIGHT / 6;
+				const bottom = 5 * CARD_HEIGHT / 6;
+
+				const pathArray = [
+					"M", left, startY,
+					"L", middle, top,
+					"L", right, startY,
+					"L", middle, bottom,
+					"Z"
+				]
+
+				const path = pathArray.join(" ");
+				return pathElement(path)
+			}
+
+			function oval(startX) {
+				const sideHeight = CARD_HEIGHT / 4;
+				const curveHeight = CARD_HEIGHT / 4;
+				const startY = (CARD_HEIGHT + sideHeight) / 2;
+				const left = startX;
+				const right = left + SHAPE_WIDTH;
+
+				const pathArray = [
+					"M", left, startY,
+					"L", left, startY - sideHeight,
+					"C", left, startY - sideHeight - curveHeight,
+						 right, startY - sideHeight - curveHeight,
+						 right, startY - sideHeight,
+					"L", right, startY,
+					"C", right, startY + curveHeight,
+						 left, startY + curveHeight,
+						 left, startY,
+					"Z"
+				];
+				const path = pathArray.join(" ");
+				return pathElement(path);
+			}
+
+			function S(startX) {
+				
+				startX = startX + SHAPE_WIDTH / 5;
+				const left = startX - SHAPE_WIDTH / 5;
+
+				const pathArray = [
+					"M", startX, CARD_HEIGHT / 2,
+					
+					"C", startX, 3 * CARD_HEIGHT / 8,
+						 left, 3 * CARD_HEIGHT / 8,
+						 left, 3 * CARD_HEIGHT / 8,
+					
+					"C", left - SHAPE_WIDTH / 5, 3 * CARD_HEIGHT / 8,
+						 left - SHAPE_WIDTH / 5, CARD_HEIGHT / 8,
+						 left + SHAPE_WIDTH / 5, CARD_HEIGHT / 8,
+					
+					"C", left + 3 * SHAPE_WIDTH / 5, CARD_HEIGHT / 8,
+						 left + 4 * SHAPE_WIDTH / 5, 3 * CARD_HEIGHT / 8,
+						 left + 4 * SHAPE_WIDTH / 5, CARD_HEIGHT / 2,
+					
+					// Halfway
+
+					"C", left + 4 * SHAPE_WIDTH / 5, 5 * CARD_HEIGHT / 8,
+						 left + SHAPE_WIDTH, 5 * CARD_HEIGHT / 8,
+						 left + SHAPE_WIDTH, 5 * CARD_HEIGHT / 8,
+
+					"C", left + 6 * SHAPE_WIDTH / 5, 5 * CARD_HEIGHT / 8,
+						 left + 6 * SHAPE_WIDTH / 5, 7 * CARD_HEIGHT / 8,
+						 left + 4 * SHAPE_WIDTH / 5, 7 * CARD_HEIGHT / 8,
+
+					"C", left + 2 * SHAPE_WIDTH / 5, 7 * CARD_HEIGHT / 8,
+						 startX, 5 * CARD_HEIGHT / 8,
+						 startX, CARD_HEIGHT / 2,
+						 
+					"Z"
+				]
+				const path = pathArray.join(" ");
+
+				return pathElement(path)
+			}
+
+			if (card.shape === 'oval') {
+				return drawShapesTemplate(oval);
+			}
+			else if (card.shape === 'diamond') {
+				return drawShapesTemplate(diamond);
+			}
+			else {
+				return drawShapesTemplate(S);
+			}
+		}
+
+		function drawShapesTemplate(shapeFunc) {
+			var shapes;
+			if (card.number === 1) {
+				shapes = [
+					shapeFunc(SHAPE_1_X)
+				]
+			}
+			else if (card.number === 2) {
+				shapes = [
+					shapeFunc(SHAPE_2_LEFT_X),
+					shapeFunc(SHAPE_2_RIGHT_X)
+				]
+			}
+			else {
+				shapes = [
+					shapeFunc(SHAPE_3_LEFT_X),
+					shapeFunc(SHAPE_3_MIDDLE_X),
+					shapeFunc(SHAPE_3_RIGHT_X)
+				]
+			}
+
+			return (
+				<g>
+					{shapes.map((shape) => {
+						return shape;
+					})}
+				</g>
+			);			
+		}
+
+
 
 		return (
-			<svg height={HEIGHT} width={WIDTH}>
+			<svg height={CARD_HEIGHT} width={CARD_WIDTH}>
 				<defs>
-					<pattern id="stripedblue" x="0%" y="0%" height="0.12" width="100%">
-					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="3" stroke="blue">
+					<pattern id="stripedblue" x="0%" y="0%" height={STRIPE_FREQ} width="100%">
+					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="2" stroke="blue">
 					  </line>
 					</pattern>
 
-					<pattern id="stripedred" x="0%" y="0%" height="0.12" width="100%">
-					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="3" stroke="red">
+					<pattern id="stripedred" x="0%" y="0%" height={STRIPE_FREQ} width="100%">
+					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="2" stroke="red">
 					  </line>
 					</pattern>
 
-					<pattern id="stripedgreen" x="0%" y="0%" height="0.12" width="100%">
-					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="3" stroke="green">
+					<pattern id="stripedgreen" x="0%" y="0%" height={STRIPE_FREQ} width="100%">
+					  <line x1="0" x2="100%" y1="0" y2="0" strokeWidth="2" stroke="green">
 					  </line>
 					</pattern>
 				</defs>
-				<circle cx={WIDTH/2} cy={HEIGHT/2} r={HEIGHT/3} fill={getFill(card.fill)} strokeWidth="2" stroke={card.color}>
-				</circle>
-				<path x="80" transform="scale(0.8) translate(-150, -150)" d="M 200 185 L 200 150 C 200 115 250 115 250 150 L 250 185 C 250 220 200 220 200 185 Z" fill="red" strokeWidth="3" stroke="black">
-    			</path>
+				{renderShapes()}
 			</svg>
 		)
 	}
@@ -97,13 +245,9 @@ export default class PlayArea extends React.Component {
 		      	<ReactGridLayout className="layout" rowHeight={105} cols={{lg: 5, md: 5, sm: 5, xs: 5}}>
 		      		{
 		      			this.state.game.activeCards.map((card, idx) => {
-			      		return (<div style={{transition: 'none', width: '100%', height: '100%'}} id="lol" key={card.shape + card.fill + card.number + card.color} data-grid={{x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true}}>
-			      			<Paper style={{width: '100%', height: '100%', padding: '10px', borderRadius: '4px'}} zDepth={1}>
-			      				{c.drawCard(card)}
-			      				{card.color}<br/>
-			      				{card.fill}<br/>
-			      				{card.number}<br/>
-			      				{card.shape}
+			      		return (<div onClick={() => c.onCardClick(card)} style={{transition: 'none', width: '100%', height: '100%'}} id="lol" key={card.shape + card.fill + card.number + card.color} data-grid={{x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true}}>
+			      			<Paper style={{width: '100%', height: '100%', padding: '10px', borderRadius: '4px', backgroundColor:(card.selected ? 'rgba(0, 0, 0, 0.2)' : '')}} zDepth={1}>
+			      				{c.renderCard(card)}
 			      			</Paper>
 			      		</div>)
 		      		})}

@@ -110,6 +110,12 @@ Rooms.startGame = function(roomId) {
 
 	deck = shuffle(deck);
 
+	var id = 1;
+	_.forEach(deck, function(card) {
+		card.id = id;
+		id++;
+	})
+
 	var room = _.find(Rooms.rooms, function(room) {
 		return room.id == roomId;
 	});

@@ -50439,7 +50439,8 @@ var PlayArea = function (_React$Component) {
 		var _this = _possibleConstructorReturn(this, (PlayArea.__proto__ || Object.getPrototypeOf(PlayArea)).call(this, props));
 
 		_this.state = {
-			game: {}
+			game: {},
+			selectedCardIds: {}
 		};
 		return _this;
 	}
@@ -50447,7 +50448,6 @@ var PlayArea = function (_React$Component) {
 	_createClass(PlayArea, [{
 		key: 'componentDidMount',
 		value: function componentDidMount() {
-			console.log(this.props);
 			var socket = this.props.socket;
 			socket.on('gameStatus', function (status) {
 				this.setState({ game: status });
@@ -50459,11 +50459,38 @@ var PlayArea = function (_React$Component) {
 			this.props.socket.emit('startGame', this.props.roomId);
 		}
 	}, {
-		key: 'drawCard',
-		value: function drawCard(card) {
+		key: 'onCardClick',
+		value: function onCardClick(card) {
+			card.selected = !card.selected;
+			this.setState({ game: this.state.game });
+			/*
+   var newSelected = _.clone(this.state.selectedCardIds);
+   newSelected[card.id] = !newSelected[card.id];
+   this.setState({selectedCardIds: newSelected});
+   console.log(this.state.selectedCardIds);
+   */
+		}
+	}, {
+		key: 'renderCard',
+		value: function renderCard(card) {
+
+			var CARD_HEIGHT = 85;
+			var CARD_WIDTH = 140;
+
+			var SHAPE_WIDTH = CARD_WIDTH / 5;
+
+			var SHAPE_1_X = (CARD_WIDTH - SHAPE_WIDTH) / 2;
+
+			var SHAPE_2_LEFT_X = CARD_WIDTH / 3 - SHAPE_WIDTH / 2;
+			var SHAPE_2_RIGHT_X = 2 * CARD_WIDTH / 3 - SHAPE_WIDTH / 2;
+
+			var SHAPE_3_LEFT_X = CARD_WIDTH / 6 - SHAPE_WIDTH / 2;
+			var SHAPE_3_MIDDLE_X = 3 * CARD_WIDTH / 6 - SHAPE_WIDTH / 2;
+			var SHAPE_3_RIGHT_X = 5 * CARD_WIDTH / 6 - SHAPE_WIDTH / 2;
+
+			var STRIPE_FREQ = 0.07;
 
 			function getFill(fillType) {
-				console.log(fillType);
 				if (fillType === "empty") {
 					return "none";
 				} else if (fillType === "striped") {
@@ -50473,39 +50500,105 @@ var PlayArea = function (_React$Component) {
 				}
 			}
 
-			var HEIGHT = 85;
-			var WIDTH = 140;
+			function renderShapes() {
 
-			var OVAL_SIDE_LENGTH = HEIGHT / 8;
+				function pathElement(path) {
+					return _react2.default.createElement('path', { key: Math.random(), d: path, fill: getFill(card.fill), strokeWidth: '3', stroke: card.color });
+				}
 
-			var oval_path = "\
-		M0 0 L \
-		";
+				function diamond(startX) {
+					var left = startX;
+					var middle = left + SHAPE_WIDTH / 2;
+					var right = startX + SHAPE_WIDTH;
+
+					var startY = CARD_HEIGHT / 2;
+					var top = CARD_HEIGHT / 6;
+					var bottom = 5 * CARD_HEIGHT / 6;
+
+					var pathArray = ["M", left, startY, "L", middle, top, "L", right, startY, "L", middle, bottom, "Z"];
+
+					var path = pathArray.join(" ");
+					return pathElement(path);
+				}
+
+				function oval(startX) {
+					var sideHeight = CARD_HEIGHT / 4;
+					var curveHeight = CARD_HEIGHT / 4;
+					var startY = (CARD_HEIGHT + sideHeight) / 2;
+					var left = startX;
+					var right = left + SHAPE_WIDTH;
+
+					var pathArray = ["M", left, startY, "L", left, startY - sideHeight, "C", left, startY - sideHeight - curveHeight, right, startY - sideHeight - curveHeight, right, startY - sideHeight, "L", right, startY, "C", right, startY + curveHeight, left, startY + curveHeight, left, startY, "Z"];
+					var path = pathArray.join(" ");
+					return pathElement(path);
+				}
+
+				function S(startX) {
+
+					startX = startX + SHAPE_WIDTH / 5;
+					var left = startX - SHAPE_WIDTH / 5;
+
+					var pathArray = ["M", startX, CARD_HEIGHT / 2, "C", startX, 3 * CARD_HEIGHT / 8, left, 3 * CARD_HEIGHT / 8, left, 3 * CARD_HEIGHT / 8, "C", left - SHAPE_WIDTH / 5, 3 * CARD_HEIGHT / 8, left - SHAPE_WIDTH / 5, CARD_HEIGHT / 8, left + SHAPE_WIDTH / 5, CARD_HEIGHT / 8, "C", left + 3 * SHAPE_WIDTH / 5, CARD_HEIGHT / 8, left + 4 * SHAPE_WIDTH / 5, 3 * CARD_HEIGHT / 8, left + 4 * SHAPE_WIDTH / 5, CARD_HEIGHT / 2,
+
+					// Halfway
+
+					"C", left + 4 * SHAPE_WIDTH / 5, 5 * CARD_HEIGHT / 8, left + SHAPE_WIDTH, 5 * CARD_HEIGHT / 8, left + SHAPE_WIDTH, 5 * CARD_HEIGHT / 8, "C", left + 6 * SHAPE_WIDTH / 5, 5 * CARD_HEIGHT / 8, left + 6 * SHAPE_WIDTH / 5, 7 * CARD_HEIGHT / 8, left + 4 * SHAPE_WIDTH / 5, 7 * CARD_HEIGHT / 8, "C", left + 2 * SHAPE_WIDTH / 5, 7 * CARD_HEIGHT / 8, startX, 5 * CARD_HEIGHT / 8, startX, CARD_HEIGHT / 2, "Z"];
+					var path = pathArray.join(" ");
+
+					return pathElement(path);
+				}
+
+				if (card.shape === 'oval') {
+					return drawShapesTemplate(oval);
+				} else if (card.shape === 'diamond') {
+					return drawShapesTemplate(diamond);
+				} else {
+					return drawShapesTemplate(S);
+				}
+			}
+
+			function drawShapesTemplate(shapeFunc) {
+				var shapes;
+				if (card.number === 1) {
+					shapes = [shapeFunc(SHAPE_1_X)];
+				} else if (card.number === 2) {
+					shapes = [shapeFunc(SHAPE_2_LEFT_X), shapeFunc(SHAPE_2_RIGHT_X)];
+				} else {
+					shapes = [shapeFunc(SHAPE_3_LEFT_X), shapeFunc(SHAPE_3_MIDDLE_X), shapeFunc(SHAPE_3_RIGHT_X)];
+				}
+
+				return _react2.default.createElement(
+					'g',
+					null,
+					shapes.map(function (shape) {
+						return shape;
+					})
+				);
+			}
 
 			return _react2.default.createElement(
 				'svg',
-				{ height: HEIGHT, width: WIDTH },
+				{ height: CARD_HEIGHT, width: CARD_WIDTH },
 				_react2.default.createElement(
 					'defs',
 					null,
 					_react2.default.createElement(
 						'pattern',
-						{ id: 'stripedblue', x: '0%', y: '0%', height: '0.12', width: '100%' },
-						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '3', stroke: 'blue' })
+						{ id: 'stripedblue', x: '0%', y: '0%', height: STRIPE_FREQ, width: '100%' },
+						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '2', stroke: 'blue' })
 					),
 					_react2.default.createElement(
 						'pattern',
-						{ id: 'stripedred', x: '0%', y: '0%', height: '0.12', width: '100%' },
-						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '3', stroke: 'red' })
+						{ id: 'stripedred', x: '0%', y: '0%', height: STRIPE_FREQ, width: '100%' },
+						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '2', stroke: 'red' })
 					),
 					_react2.default.createElement(
 						'pattern',
-						{ id: 'stripedgreen', x: '0%', y: '0%', height: '0.12', width: '100%' },
-						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '3', stroke: 'green' })
+						{ id: 'stripedgreen', x: '0%', y: '0%', height: STRIPE_FREQ, width: '100%' },
+						_react2.default.createElement('line', { x1: '0', x2: '100%', y1: '0', y2: '0', strokeWidth: '2', stroke: 'green' })
 					)
 				),
-				_react2.default.createElement('circle', { cx: WIDTH / 2, cy: HEIGHT / 2, r: HEIGHT / 3, fill: getFill(card.fill), strokeWidth: '2', stroke: card.color }),
-				_react2.default.createElement('path', { x: '80', transform: 'scale(0.8) translate(-150, -150)', d: 'M 200 185 L 200 150 C 200 115 250 115 250 150 L 250 185 C 250 220 200 220 200 185 Z', fill: 'red', strokeWidth: '3', stroke: 'black' })
+				renderShapes()
 			);
 		}
 	}, {
@@ -50535,18 +50628,13 @@ var PlayArea = function (_React$Component) {
 					this.state.game.activeCards.map(function (card, idx) {
 						return _react2.default.createElement(
 							'div',
-							{ style: { transition: 'none', width: '100%', height: '100%' }, id: 'lol', key: card.shape + card.fill + card.number + card.color, 'data-grid': { x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true } },
+							{ onClick: function onClick() {
+									return c.onCardClick(card);
+								}, style: { transition: 'none', width: '100%', height: '100%' }, id: 'lol', key: card.shape + card.fill + card.number + card.color, 'data-grid': { x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true } },
 							_react2.default.createElement(
 								_Paper2.default,
-								{ style: { width: '100%', height: '100%', padding: '10px', borderRadius: '4px' }, zDepth: 1 },
-								c.drawCard(card),
-								card.color,
-								_react2.default.createElement('br', null),
-								card.fill,
-								_react2.default.createElement('br', null),
-								card.number,
-								_react2.default.createElement('br', null),
-								card.shape
+								{ style: { width: '100%', height: '100%', padding: '10px', borderRadius: '4px', backgroundColor: card.selected ? 'rgba(0, 0, 0, 0.2)' : '' }, zDepth: 1 },
+								c.renderCard(card)
 							)
 						);
 					})
