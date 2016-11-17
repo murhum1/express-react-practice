@@ -33,18 +33,31 @@ export default class Room extends React.Component {
 		this.setState({value: ""})
 	}
 
+	pushMessage(message) {
+		var currentMessages = this.state.messages;
+		currentMessages.push(message);
+		this.setState({messages: currentMessages}, function() {
+			var element = document.getElementById("chatMessages");
+			element.scrollTop = element.scrollHeight;
+		});
+	}
+
 	componentWillMount() {
 		const c = this;
 		const socket = c.props.socket;
 
 		socket.on('message', function(message) {
 			message.timestamp = new Date(message.timestamp);
-			var currentMessages = c.state.messages;
-			currentMessages.push(message);
-			c.setState({messages: currentMessages}, function() {
-				var element = document.getElementById("chatMessages");
-				element.scrollTop = element.scrollHeight;
-			});
+			c.pushMessage(message);
+		})
+
+		socket.on('correctSet', function(data) {
+			var message = {
+				timestamp: new Date(data.timestamp),
+				message: data.scorer + " has found a set!",
+				server: true
+			}
+			c.pushMessage(message)
 		})
 	}
 

@@ -63,6 +63,27 @@ io.on('connection', function(client) {
 		}
 	})
 
+	client.on('submitSet', function(data) {
+		var setIsValid = Rooms.validateSet(client.id, data.roomId, data.set);
+		if (setIsValid) {
+			io.to('rooms/' + data.roomId).emit('correctSet', {
+				scorer: people[client.id],
+				set: data.set,
+				timestamp: new Date()
+			})
+			setTimeout(function() {
+				Rooms.processSet(data.roomId, data.set);
+				var game = Rooms.getGame(roomId);
+				io.to('rooms/' + data.roomId).emit('gameStatus', game);
+			}, 1000);
+		}
+		else {
+			io.to('rooms/' + data.roomId).emit('failSet', {
+				failure: people[client.id]
+			})
+		}
+	})
+
 	client.on('disconnect', function(data) {
 		Rooms.playerLeft(client.id);
 		io.sockets.emit('updateRooms', {rooms: Rooms.getRooms()})

@@ -33,13 +33,14 @@ export default class PlayArea extends React.Component {
 
 	onCardClick(card) {
 		card.selected = !card.selected;
-		this.setState({game: this.state.game});
-		/*
-		var newSelected = _.clone(this.state.selectedCardIds);
-		newSelected[card.id] = !newSelected[card.id];
-		this.setState({selectedCardIds: newSelected});
-		console.log(this.state.selectedCardIds);
-		*/
+		this.setState({game: this.state.game}, function() {
+			var selectedCards = _.filter(this.state.game.activeCards, function(card) {
+				return card.selected;
+			})
+			if (selectedCards.length === 3) {
+				this.props.socket.emit('submitSet', { roomId: this.props.roomId, set:  selectedCards })
+			}
+		});
 	}
 
 	renderCard(card) {

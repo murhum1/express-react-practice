@@ -136,4 +136,39 @@ Rooms.startGame = function(roomId) {
 	room.game.activeCards = room.game.deck.splice(0, 12);
 }
 
+Rooms.validateSet = function(clientId, roomId, set) {
+	var attributes = {
+		color: [],
+		number: [],
+		shape: [],
+		fill: []
+	};
+	_.forEach(set, function(card) {
+		_.forEach(attributes, function(attrArray, key) {
+			attributes[key].push(card[key]);
+		})
+	});
+
+	var setIsValid = _.every(attributes, function(attr) {
+		var allSame = _.uniq(attr).length === 1;
+		var allDiffer = _.uniq(attr).length === 3;
+		return (allSame || allDiffer);
+	})
+
+	return setIsValid;
+}
+
+Rooms.processSet = function(roomId, set) {
+	var game = Rooms.getGame(roomId);
+	_.forEach(set, function(card) {
+		var index = _.findIndex(game.activeCards, function(activeCard) {
+			return card.color === activeCard.color &&
+				   card.number === activeCard.number &&
+				   card.shape === activeCard.shape &&
+				   card.fill === activeCard.fill;
+		})
+		game.activeCards.splice(index, 1);
+	})
+}
+
 module.exports = Rooms

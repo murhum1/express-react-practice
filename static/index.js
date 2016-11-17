@@ -50295,6 +50295,16 @@ var Room = function (_React$Component) {
 			this.setState({ value: "" });
 		}
 	}, {
+		key: 'pushMessage',
+		value: function pushMessage(message) {
+			var currentMessages = this.state.messages;
+			currentMessages.push(message);
+			this.setState({ messages: currentMessages }, function () {
+				var element = document.getElementById("chatMessages");
+				element.scrollTop = element.scrollHeight;
+			});
+		}
+	}, {
 		key: 'componentWillMount',
 		value: function componentWillMount() {
 			var c = this;
@@ -50302,12 +50312,16 @@ var Room = function (_React$Component) {
 
 			socket.on('message', function (message) {
 				message.timestamp = new Date(message.timestamp);
-				var currentMessages = c.state.messages;
-				currentMessages.push(message);
-				c.setState({ messages: currentMessages }, function () {
-					var element = document.getElementById("chatMessages");
-					element.scrollTop = element.scrollHeight;
-				});
+				c.pushMessage(message);
+			});
+
+			socket.on('correctSet', function (data) {
+				var message = {
+					timestamp: new Date(data.timestamp),
+					message: data.scorer + " has found a set!",
+					server: true
+				};
+				c.pushMessage(message);
 			});
 		}
 	}, {
@@ -50462,13 +50476,14 @@ var PlayArea = function (_React$Component) {
 		key: 'onCardClick',
 		value: function onCardClick(card) {
 			card.selected = !card.selected;
-			this.setState({ game: this.state.game });
-			/*
-   var newSelected = _.clone(this.state.selectedCardIds);
-   newSelected[card.id] = !newSelected[card.id];
-   this.setState({selectedCardIds: newSelected});
-   console.log(this.state.selectedCardIds);
-   */
+			this.setState({ game: this.state.game }, function () {
+				var selectedCards = _.filter(this.state.game.activeCards, function (card) {
+					return card.selected;
+				});
+				if (selectedCards.length === 3) {
+					this.props.socket.emit('submitSet', { roomId: this.props.roomId, set: selectedCards });
+				}
+			});
 		}
 	}, {
 		key: 'renderCard',
