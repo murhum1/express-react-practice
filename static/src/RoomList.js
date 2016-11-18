@@ -45,7 +45,8 @@ export default class extends React.Component {
 			const rooms = this.state.rooms;
 			const listItems = rooms.map((room) => {
 				const primaryText = "Room " + room.id;
-				const secondaryText = room.currentPeople + "/" + room.maxPeople + " playing";
+				const gameRunningText = (room.game.started ? " - Game started" : "")
+				const secondaryText = room.currentPeople + "/" + room.maxPeople + " playing" + gameRunningText;
 				const link = <Link key={room.id} to={"rooms/" + room.id}><ListItem primaryText={primaryText} secondaryText={secondaryText} /></Link>
 				return link;
 			})

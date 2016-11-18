@@ -2,6 +2,8 @@ import React from 'react'
 import Paper from 'material-ui/Paper'
 import {Responsive, WidthProvider} from 'react-grid-layout'
 import RaisedButton from 'material-ui/RaisedButton'
+import globals from './globals'
+
 const ReactGridLayout = WidthProvider(Responsive);
 
 var SVGComponent = React.createClass({
@@ -37,10 +39,40 @@ export default class PlayArea extends React.Component {
 	    		if (cardInSet) {
 	    			card.cardInSet = true;
 	    		}
-	    		console.log(card);
 	    	})
 	    	c.setState({game: c.state.game, ignoreCardClicks: true})
 	    })
+
+	    socket.on('failSet', function(data) {
+			if (data.socketId === socket.id) {
+				_.forEach(c.state.game.activeCards, function(card) {
+		    		if (card.selected) {
+		    			card.failSet = true;
+		    		}
+	    			card.selected = false;
+				})
+				c.setState({game: c.state.game, ignoreCardClicks: true, ignoreTime: globals.FAIL_SET_IGNORE_TIME})
+				c.ignoreInterval = setInterval(function() {
+					if (c.state.ignoreTime === 0) {
+						clearInterval(c.ignoreInterval);
+						_.forEach(c.state.game.activeCards, function(card) {
+							card.failSet = false;
+						})
+						c.setState({game: c.state.game, ignoreCardClicks: false})
+					}
+					else {
+						c.setState({ignoreTime: c.state.ignoreTime - 1})
+					}
+				}, 1000);
+			}
+	    })
+	}
+
+	componentWillUnmount() {
+		this.props.socket.removeAllListeners('message');
+		this.props.socket.removeAllListeners('correctSet');
+		this.props.socket.removeAllListeners('failSet');
+		this.props.socket.removeAllListeners('updateRooms');
 	}
 
 	startGame() {
@@ -61,8 +93,8 @@ export default class PlayArea extends React.Component {
 	}
 
 	getCardBackground(card) {
-		console.log("Card background");
 		if (card.cardInSet) return 'rgba(0, 200, 0, 0.2)'
+		if (card.failSet) return 'rgba(200, 0, 0, 0.2)'
 		else if (card.selected) return 'rgba(0, 0, 0, 0.2)'
 		else return '';
 	}

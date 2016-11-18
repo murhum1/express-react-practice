@@ -53,7 +53,6 @@ Rooms.getRoom = function(roomId) {
 	var socketRoom = getRoomSockets(roomId);
 	var returnedRoom = _.clone(room);
 	returnedRoom.currentPeople = socketRoom.length;
-	delete returnedRoom.game;
 	returnedRoom.names = _.map(socketRoom.sockets, function(socketId) {
 		return people[socketId];
 	})

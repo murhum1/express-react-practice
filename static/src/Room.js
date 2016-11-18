@@ -49,7 +49,13 @@ export default class Room extends React.Component {
 
 	componentWillUnmount() {
 		var c = this;
+
 		c.props.socket.emit('leaveRoom', {roomId: c.props.routeParams.roomId});
+		this.props.socket.removeAllListeners('message');
+		this.props.socket.removeAllListeners('correctSet');
+		this.props.socket.removeAllListeners('failSet');
+		this.props.socket.removeAllListeners('updateRooms');
+		this.props.socket.removeAllListeners('gameStatus');
 	}
 
 	render() {

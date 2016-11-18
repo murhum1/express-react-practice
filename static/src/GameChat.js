@@ -4,6 +4,7 @@ import TextField from 'material-ui/TextField';
 import moment from 'moment'
 import Paper from 'material-ui/Paper';
 import ReactGridLayout from 'react-grid-layout'
+import globals from './globals'
 
 TextField.contextTypes = {
   muiTheme: React.PropTypes.object.isRequired,
@@ -54,10 +55,19 @@ export default class Room extends React.Component {
 		socket.on('correctSet', function(data) {
 			var message = {
 				timestamp: new Date(data.timestamp),
-				message: data.scorer + " has found a set!",
+				message: data.scorer + " has collected a Set!",
 				server: true
 			}
 			c.pushMessage(message)
+		})
+
+		socket.on('failSet', function(data) {
+			var message = {
+				timestamp: new Date(),
+				message: data.failure + " tried to collect an incorrect Set and will be unable to collect Sets for " + globals.FAIL_SET_IGNORE_TIME + " seconds.",
+				server: true
+			};
+			c.pushMessage(message);
 		})
 	}
 
@@ -65,10 +75,6 @@ export default class Room extends React.Component {
 		if (this.props.roomId && this.props.roomId !== nextProps.roomId) {
 			this.initState(nextProps)
 		}
-	}
-
-	componentWillUnmount() {
-		var c = this;
 	}
 
 	renderMessage(message) {

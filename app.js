@@ -84,7 +84,8 @@ io.on('connection', function(client) {
 		}
 		else {
 			io.to('rooms/' + data.roomId).emit('failSet', {
-				failure: people[client.id]
+				failure: people[client.id],
+				socketId: client.id
 			})
 		}
 	})

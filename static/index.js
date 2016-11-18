@@ -50248,6 +50248,10 @@ var _reactGridLayout = require('react-grid-layout');
 
 var _reactGridLayout2 = _interopRequireDefault(_reactGridLayout);
 
+var _globals = require('./globals');
+
+var _globals2 = _interopRequireDefault(_globals);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -50318,7 +50322,16 @@ var Room = function (_React$Component) {
 			socket.on('correctSet', function (data) {
 				var message = {
 					timestamp: new Date(data.timestamp),
-					message: data.scorer + " has found a set!",
+					message: data.scorer + " has collected a Set!",
+					server: true
+				};
+				c.pushMessage(message);
+			});
+
+			socket.on('failSet', function (data) {
+				var message = {
+					timestamp: new Date(),
+					message: data.failure + " tried to collect an incorrect Set and will be unable to collect Sets for " + _globals2.default.FAIL_SET_IGNORE_TIME + " seconds.",
 					server: true
 				};
 				c.pushMessage(message);
@@ -50330,11 +50343,6 @@ var Room = function (_React$Component) {
 			if (this.props.roomId && this.props.roomId !== nextProps.roomId) {
 				this.initState(nextProps);
 			}
-		}
-	}, {
-		key: 'componentWillUnmount',
-		value: function componentWillUnmount() {
-			var c = this;
 		}
 	}, {
 		key: 'renderMessage',
@@ -50399,7 +50407,7 @@ var Room = function (_React$Component) {
 
 exports.default = Room;
 
-},{"material-ui/Paper":196,"material-ui/TextField":208,"moment":238,"react":446,"react-dom":245,"react-grid-layout":256}],464:[function(require,module,exports){
+},{"./globals":468,"material-ui/Paper":196,"material-ui/TextField":208,"moment":238,"react":446,"react-dom":245,"react-grid-layout":256}],464:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -50421,6 +50429,10 @@ var _reactGridLayout = require('react-grid-layout');
 var _RaisedButton = require('material-ui/RaisedButton');
 
 var _RaisedButton2 = _interopRequireDefault(_RaisedButton);
+
+var _globals = require('./globals');
+
+var _globals2 = _interopRequireDefault(_globals);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -50478,10 +50490,40 @@ var PlayArea = function (_React$Component) {
 					if (cardInSet) {
 						card.cardInSet = true;
 					}
-					console.log(card);
 				});
 				c.setState({ game: c.state.game, ignoreCardClicks: true });
 			});
+
+			socket.on('failSet', function (data) {
+				if (data.socketId === socket.id) {
+					_.forEach(c.state.game.activeCards, function (card) {
+						if (card.selected) {
+							card.failSet = true;
+						}
+						card.selected = false;
+					});
+					c.setState({ game: c.state.game, ignoreCardClicks: true, ignoreTime: _globals2.default.FAIL_SET_IGNORE_TIME });
+					c.ignoreInterval = setInterval(function () {
+						if (c.state.ignoreTime === 0) {
+							clearInterval(c.ignoreInterval);
+							_.forEach(c.state.game.activeCards, function (card) {
+								card.failSet = false;
+							});
+							c.setState({ game: c.state.game, ignoreCardClicks: false });
+						} else {
+							c.setState({ ignoreTime: c.state.ignoreTime - 1 });
+						}
+					}, 1000);
+				}
+			});
+		}
+	}, {
+		key: 'componentWillUnmount',
+		value: function componentWillUnmount() {
+			this.props.socket.removeAllListeners('message');
+			this.props.socket.removeAllListeners('correctSet');
+			this.props.socket.removeAllListeners('failSet');
+			this.props.socket.removeAllListeners('updateRooms');
 		}
 	}, {
 		key: 'startGame',
@@ -50505,8 +50547,8 @@ var PlayArea = function (_React$Component) {
 	}, {
 		key: 'getCardBackground',
 		value: function getCardBackground(card) {
-			console.log("Card background");
-			if (card.cardInSet) return 'rgba(0, 200, 0, 0.2)';else if (card.selected) return 'rgba(0, 0, 0, 0.2)';else return '';
+			if (card.cardInSet) return 'rgba(0, 200, 0, 0.2)';
+			if (card.failSet) return 'rgba(200, 0, 0, 0.2)';else if (card.selected) return 'rgba(0, 0, 0, 0.2)';else return '';
 		}
 	}, {
 		key: 'renderCard',
@@ -50695,7 +50737,7 @@ var PlayArea = function (_React$Component) {
 
 exports.default = PlayArea;
 
-},{"material-ui/Paper":196,"material-ui/RaisedButton":198,"react":446,"react-grid-layout":256}],465:[function(require,module,exports){
+},{"./globals":468,"material-ui/Paper":196,"material-ui/RaisedButton":198,"react":446,"react-grid-layout":256}],465:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -50793,7 +50835,13 @@ var Room = function (_React$Component) {
 		key: 'componentWillUnmount',
 		value: function componentWillUnmount() {
 			var c = this;
+
 			c.props.socket.emit('leaveRoom', { roomId: c.props.routeParams.roomId });
+			this.props.socket.removeAllListeners('message');
+			this.props.socket.removeAllListeners('correctSet');
+			this.props.socket.removeAllListeners('failSet');
+			this.props.socket.removeAllListeners('updateRooms');
+			this.props.socket.removeAllListeners('gameStatus');
 		}
 	}, {
 		key: 'render',
@@ -50918,7 +50966,8 @@ var _class = function (_React$Component) {
 				var rooms = this.state.rooms;
 				var listItems = rooms.map(function (room) {
 					var primaryText = "Room " + room.id;
-					var secondaryText = room.currentPeople + "/" + room.maxPeople + " playing";
+					var gameRunningText = room.game.started ? " - Game started" : "";
+					var secondaryText = room.currentPeople + "/" + room.maxPeople + " playing" + gameRunningText;
 					var link = _react2.default.createElement(
 						_reactRouter.Link,
 						{ key: room.id, to: "rooms/" + room.id },
@@ -50959,6 +51008,10 @@ var _Paper = require('material-ui/Paper');
 
 var _Paper2 = _interopRequireDefault(_Paper);
 
+var _globals = require('./globals');
+
+var _globals2 = _interopRequireDefault(_globals);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -50975,22 +51028,47 @@ var GameArea = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (GameArea.__proto__ || Object.getPrototypeOf(GameArea)).call(this, props));
 
-    _this.state = {};
+    _this.state = { failTimers: {} };
+    _this.failIntervals = {};
     return _this;
   }
 
   _createClass(GameArea, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      this.props.socket.on('gameStatus', function (game) {
-        this.setState({ game: game });
-      }.bind(this));
+      var socket = this.props.socket;
+      var c = this;
+      socket.on('gameStatus', function (game) {
+        c.setState({ game: game });
+      });
+
+      socket.on('failSet', function (data) {
+        var timers = c.state.failTimers;
+        timers[data.failure] = _globals2.default.FAIL_SET_IGNORE_TIME;
+        c.setState({ failTimers: timers }, function () {
+          c.failIntervals[data.failure] = setInterval(function () {
+            if (c.state.failTimers[data.failure] === 0) {
+              clearInterval(c.failIntervals[data.failure]);
+              delete c.state.failTimers[data.failure];
+              c.setState({ failTimers: c.state.failTimers });
+            } else {
+              c.state.failTimers[data.failure] -= 1;
+              c.setState({ failTimers: c.state.failTimers });
+            }
+          }, 1000);
+        });
+      });
     }
   }, {
     key: 'getScore',
     value: function getScore(name) {
       if (!this.state.game || !this.state.game.started) return 0;
       return this.state.game.sets[name];
+    }
+  }, {
+    key: 'getFailTimer',
+    value: function getFailTimer(name) {
+      return this.state.failTimers[name];
     }
   }, {
     key: 'render',
@@ -51006,7 +51084,12 @@ var GameArea = function (_React$Component) {
           name,
           ' (',
           this.getScore(name),
-          ')'
+          ') ',
+          _react2.default.createElement(
+            'span',
+            { style: { color: 'red' } },
+            this.getFailTimer(name)
+          )
         );
       }.bind(this));
       return _react2.default.createElement(
@@ -51025,7 +51108,14 @@ var GameArea = function (_React$Component) {
 
 exports.default = GameArea;
 
-},{"material-ui/Paper":196,"react":446}],468:[function(require,module,exports){
+},{"./globals":468,"material-ui/Paper":196,"react":446}],468:[function(require,module,exports){
+"use strict";
+
+module.exports = {
+	FAIL_SET_IGNORE_TIME: 10
+};
+
+},{}],469:[function(require,module,exports){
 'use strict';
 
 var _reactDom = require('react-dom');
@@ -51056,8 +51146,6 @@ var _Room2 = _interopRequireDefault(_Room);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-console.log("asd");
-
 // Needed for onTouchTap 
 // http://stackoverflow.com/a/34015469/988941 
 (0, _reactTapEventPlugin2.default)();
@@ -51065,6 +51153,7 @@ console.log("asd");
 _reactDom2.default.render(_react2.default.createElement(
 	_reactRouter.Router,
 	{ history: _reactRouter.hashHistory },
+	_react2.default.createElement(_reactRouter.Redirect, { from: '/', to: 'roomList' }),
 	_react2.default.createElement(
 		_reactRouter.Route,
 		{ path: '/', component: _App2.default },
@@ -51073,4 +51162,4 @@ _reactDom2.default.render(_react2.default.createElement(
 	)
 ), document.getElementById('root'));
 
-},{"./App":461,"./Room":465,"./RoomList":466,"react":446,"react-dom":245,"react-router":287,"react-tap-event-plugin":299}]},{},[468]);
+},{"./App":461,"./Room":465,"./RoomList":466,"react":446,"react-dom":245,"react-router":287,"react-tap-event-plugin":299}]},{},[469]);
