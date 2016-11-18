@@ -35,6 +35,10 @@ io.on('connection', function(client) {
 		if (!Rooms.getGame(data.roomId).owner) {
 			Rooms.assignGameOwner(data.roomId, client.id);
 		}
+		var game = Rooms.getGame(data.roomId);
+		if (game.started && game.sets[people[client.id]] === undefined) {
+			game.sets[people[client.id]] = 0;
+		}
 		io.to(roomName).emit('message', {timestamp: new Date(), server: true, message: people[client.id] + " has joined the room!"});
 		client.emit('gameStatus', Rooms.getGame(data.roomId))
 		io.emit('updateRooms', {rooms: Rooms.getRooms()});
@@ -64,16 +68,17 @@ io.on('connection', function(client) {
 	})
 
 	client.on('submitSet', function(data) {
-		var setIsValid = Rooms.validateSet(client.id, data.roomId, data.set);
+		var setIsValid = Rooms.validateSet(data.roomId, data.set);
 		if (setIsValid) {
 			io.to('rooms/' + data.roomId).emit('correctSet', {
 				scorer: people[client.id],
 				set: data.set,
+				sets: Rooms.getGame(data.roomId).sets,
 				timestamp: new Date()
 			})
 			setTimeout(function() {
-				Rooms.processSet(data.roomId, data.set);
-				var game = Rooms.getGame(roomId);
+				Rooms.processSet(client.id, data.roomId, data.set);
+				var game = Rooms.getGame(data.roomId);
 				io.to('rooms/' + data.roomId).emit('gameStatus', game);
 			}, 1000);
 		}

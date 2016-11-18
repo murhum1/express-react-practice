@@ -21,10 +21,26 @@ export default class PlayArea extends React.Component {
 	}
 
   	componentDidMount() {
+	    var c = this;
 	    var socket = this.props.socket;
 	    socket.on('gameStatus', function(status) {
-	    	this.setState({game: status});
+	    	this.setState({game: status, ignoreCardClicks: false});
 	    }.bind(this))
+
+	    socket.on('correctSet', function(data) {
+	    	_.forEach(c.state.game.activeCards, function(card) {
+	    		card.selected = false;
+	    		var cardInSet = _.find(data.set, function(setCard) {
+	    			return card.id === setCard.id;
+	    		});
+
+	    		if (cardInSet) {
+	    			card.cardInSet = true;
+	    		}
+	    		console.log(card);
+	    	})
+	    	c.setState({game: c.state.game, ignoreCardClicks: true})
+	    })
 	}
 
 	startGame() {
@@ -32,6 +48,7 @@ export default class PlayArea extends React.Component {
 	}
 
 	onCardClick(card) {
+		if (this.state.ignoreCardClicks) return;
 		card.selected = !card.selected;
 		this.setState({game: this.state.game}, function() {
 			var selectedCards = _.filter(this.state.game.activeCards, function(card) {
@@ -41,6 +58,13 @@ export default class PlayArea extends React.Component {
 				this.props.socket.emit('submitSet', { roomId: this.props.roomId, set:  selectedCards })
 			}
 		});
+	}
+
+	getCardBackground(card) {
+		console.log("Card background");
+		if (card.cardInSet) return 'rgba(0, 200, 0, 0.2)'
+		else if (card.selected) return 'rgba(0, 0, 0, 0.2)'
+		else return '';
 	}
 
 	renderCard(card) {
@@ -246,8 +270,8 @@ export default class PlayArea extends React.Component {
 		      	<ReactGridLayout className="layout" rowHeight={105} cols={{lg: 5, md: 5, sm: 5, xs: 5}}>
 		      		{
 		      			this.state.game.activeCards.map((card, idx) => {
-			      		return (<div onClick={() => c.onCardClick(card)} style={{transition: 'none', width: '100%', height: '100%'}} id="lol" key={card.shape + card.fill + card.number + card.color} data-grid={{x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true}}>
-			      			<Paper style={{width: '100%', height: '100%', padding: '10px', borderRadius: '4px', backgroundColor:(card.selected ? 'rgba(0, 0, 0, 0.2)' : '')}} zDepth={1}>
+			      		return (<div onClick={() => c.onCardClick(card)} style={{transition: 'none', width: '100%', height: '100%'}} key={card.shape + card.fill + card.number + card.color} data-grid={{x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true}}>
+			      			<Paper style={{width: '100%', height: '100%', padding: '10px', borderRadius: '4px', backgroundColor:c.getCardBackground(card)}} zDepth={1}>
 			      				{c.renderCard(card)}
 			      			</Paper>
 			      		</div>)

@@ -50199,7 +50199,7 @@ var GameArea = function (_React$Component) {
         _react2.default.createElement(
           'div',
           { style: { transition: 'none' }, key: 'a', 'data-grid': { x: 0, y: 0, w: 1, h: 1, static: true } },
-          _react2.default.createElement(_RoomPeopleBox2.default, { people: this.props.people })
+          _react2.default.createElement(_RoomPeopleBox2.default, { socket: this.props.socket, people: this.props.people })
         ),
         _react2.default.createElement(
           'div',
@@ -50462,10 +50462,26 @@ var PlayArea = function (_React$Component) {
 	_createClass(PlayArea, [{
 		key: 'componentDidMount',
 		value: function componentDidMount() {
+			var c = this;
 			var socket = this.props.socket;
 			socket.on('gameStatus', function (status) {
-				this.setState({ game: status });
+				this.setState({ game: status, ignoreCardClicks: false });
 			}.bind(this));
+
+			socket.on('correctSet', function (data) {
+				_.forEach(c.state.game.activeCards, function (card) {
+					card.selected = false;
+					var cardInSet = _.find(data.set, function (setCard) {
+						return card.id === setCard.id;
+					});
+
+					if (cardInSet) {
+						card.cardInSet = true;
+					}
+					console.log(card);
+				});
+				c.setState({ game: c.state.game, ignoreCardClicks: true });
+			});
 		}
 	}, {
 		key: 'startGame',
@@ -50475,6 +50491,7 @@ var PlayArea = function (_React$Component) {
 	}, {
 		key: 'onCardClick',
 		value: function onCardClick(card) {
+			if (this.state.ignoreCardClicks) return;
 			card.selected = !card.selected;
 			this.setState({ game: this.state.game }, function () {
 				var selectedCards = _.filter(this.state.game.activeCards, function (card) {
@@ -50484,6 +50501,12 @@ var PlayArea = function (_React$Component) {
 					this.props.socket.emit('submitSet', { roomId: this.props.roomId, set: selectedCards });
 				}
 			});
+		}
+	}, {
+		key: 'getCardBackground',
+		value: function getCardBackground(card) {
+			console.log("Card background");
+			if (card.cardInSet) return 'rgba(0, 200, 0, 0.2)';else if (card.selected) return 'rgba(0, 0, 0, 0.2)';else return '';
 		}
 	}, {
 		key: 'renderCard',
@@ -50645,10 +50668,10 @@ var PlayArea = function (_React$Component) {
 							'div',
 							{ onClick: function onClick() {
 									return c.onCardClick(card);
-								}, style: { transition: 'none', width: '100%', height: '100%' }, id: 'lol', key: card.shape + card.fill + card.number + card.color, 'data-grid': { x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true } },
+								}, style: { transition: 'none', width: '100%', height: '100%' }, key: card.shape + card.fill + card.number + card.color, 'data-grid': { x: Math.floor(idx / 4), y: idx % 4, w: 1, h: 1, static: true } },
 							_react2.default.createElement(
 								_Paper2.default,
-								{ style: { width: '100%', height: '100%', padding: '10px', borderRadius: '4px', backgroundColor: card.selected ? 'rgba(0, 0, 0, 0.2)' : '' }, zDepth: 1 },
+								{ style: { width: '100%', height: '100%', padding: '10px', borderRadius: '4px', backgroundColor: c.getCardBackground(card) }, zDepth: 1 },
 								c.renderCard(card)
 							)
 						);
@@ -50950,28 +50973,49 @@ var GameArea = function (_React$Component) {
   function GameArea(props) {
     _classCallCheck(this, GameArea);
 
-    return _possibleConstructorReturn(this, (GameArea.__proto__ || Object.getPrototypeOf(GameArea)).call(this, props));
+    var _this = _possibleConstructorReturn(this, (GameArea.__proto__ || Object.getPrototypeOf(GameArea)).call(this, props));
+
+    _this.state = {};
+    return _this;
   }
 
   _createClass(GameArea, [{
     key: 'componentDidMount',
-    value: function componentDidMount() {}
+    value: function componentDidMount() {
+      this.props.socket.on('gameStatus', function (game) {
+        this.setState({ game: game });
+      }.bind(this));
+    }
+  }, {
+    key: 'getScore',
+    value: function getScore(name) {
+      if (!this.state.game || !this.state.game.started) return 0;
+      return this.state.game.sets[name];
+    }
   }, {
     key: 'render',
     value: function render() {
+      var c = this;
+      var sortedPeople = _.sortBy(this.props.people, function (name) {
+        return c.getScore(name);
+      });
+      var peopleDivs = sortedPeople.map(function (name) {
+        return _react2.default.createElement(
+          'div',
+          { key: Math.random() },
+          name,
+          ' (',
+          this.getScore(name),
+          ')'
+        );
+      }.bind(this));
       return _react2.default.createElement(
         _Paper2.default,
         { zDepth: 2, style: { float: 'left', width: '100%', height: '100%', padding: '10px' } },
         'In this room: ',
         _react2.default.createElement('br', null),
         _react2.default.createElement('br', null),
-        this.props.people.map(function (name) {
-          return _react2.default.createElement(
-            'div',
-            { key: Math.random() },
-            name
-          );
-        })
+        peopleDivs
       );
     }
   }]);

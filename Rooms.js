@@ -72,7 +72,13 @@ Rooms.getGame = function(roomId) {
 		return room.id == roomId;
 	});
 
-	delete room.game.deck;
+	return _.omit(room.game, 'deck');
+}
+
+function _getGame(roomId) {
+	var room = _.find(Rooms.rooms, function(room) {
+		return room.id == roomId;
+	});
 
 	return room.game;
 }
@@ -124,19 +130,17 @@ Rooms.startGame = function(roomId) {
 
 	room.game.started = true;
 
-	var socketIds = getRoomSockets(roomId);
+	var sockets = getRoomSockets(roomId);
 
-	room.game.participants = _.map(socketIds, function(id) {
-		return {
-			name: people[id],
-			sets: 0
-		}
+	room.game.sets = {};
+	_.forEach(sockets.sockets, function(id) {
+		room.game.sets[people[id]] = 0; 
 	})
 
 	room.game.activeCards = room.game.deck.splice(0, 12);
 }
 
-Rooms.validateSet = function(clientId, roomId, set) {
+Rooms.validateSet = function(roomId, set) {
 	var attributes = {
 		color: [],
 		number: [],
@@ -158,8 +162,8 @@ Rooms.validateSet = function(clientId, roomId, set) {
 	return setIsValid;
 }
 
-Rooms.processSet = function(roomId, set) {
-	var game = Rooms.getGame(roomId);
+Rooms.processSet = function(clientId, roomId, set) {
+	var game = _getGame(roomId);
 	_.forEach(set, function(card) {
 		var index = _.findIndex(game.activeCards, function(activeCard) {
 			return card.color === activeCard.color &&
@@ -167,8 +171,10 @@ Rooms.processSet = function(roomId, set) {
 				   card.shape === activeCard.shape &&
 				   card.fill === activeCard.fill;
 		})
-		game.activeCards.splice(index, 1);
+		game.activeCards.splice(index, 1, game.deck.pop());
 	})
+
+	game.sets[people[clientId]] += 1;
 }
 
 module.exports = Rooms
